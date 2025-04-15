@@ -1,9 +1,9 @@
 import { Component } from '@angular/core';
-import { RouterOutlet } from '@angular/router';
+import { DiaryComponent } from "./diary/diary.component";
 
 @Component({
   selector: 'app-root',
-  imports: [RouterOutlet],
+  imports: [DiaryComponent],
   templateUrl: './app.component.html',
   styleUrl: './app.component.scss'
 })

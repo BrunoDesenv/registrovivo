@@ -1,0 +1,38 @@
+<div class="container">
+    <h1>Registro Vivo</h1>
+  
+    <!-- Formulário para adicionar nova entrada -->
+    <form (ngSubmit)="addEntry()">
+      <input 
+        type="text" 
+        [(ngModel)]="title" 
+        name="title" 
+        placeholder="Título" 
+        required>
+      <textarea 
+        [(ngModel)]="content" 
+        name="content" 
+        placeholder="Conteúdo" 
+        required>
+      </textarea>
+      <button type="submit">Adicionar</button>
+    </form>
+  
+    <!-- Lista de registros usando o novo @if syntax -->
+     @if (entries.length) {
+        <div class="entries">
+            @for (entry of entries; track $index) {
+                <div class="entry">
+                    <h2>{{ entry.title }}</h2>
+                    <p>{{ entry.content }}</p>
+                    <small>{{ entry.createdAt | date:'short' }}</small>
+                    <button (click)="deleteEntry(entry.id)">Excluir</button>
+                </div>
+            }
+        </div>
+     }
+     @else {
+        <p>Nenhum registro encontrado.</p>
+     }
+  </div>
+  
