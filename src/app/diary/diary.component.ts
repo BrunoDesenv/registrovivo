@@ -1,7 +1,9 @@
-import { Component } from '@angular/core';
+import { Component, OnDestroy } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { DiaryEntry, DiaryService } from '../service/diary.service';
 import { CommonModule } from '@angular/common';
+import { SpeechRecognitionService } from '../service/speech-recognition.service';
+import { Subscription } from 'rxjs';
 
 @Component({
   selector: 'app-diary',
@@ -10,13 +12,50 @@ import { CommonModule } from '@angular/common';
   templateUrl: './diary.component.html',
   styleUrls: ['./diary.component.scss']
 })
-export class DiaryComponent {
+export class DiaryComponent implements OnDestroy {
   entries: DiaryEntry[] = [];
   title: string = '';
   content: string = '';
+  isListeningTitle = false;
+  isListeningContent = false;
+  isSpeechSupported = false;
+  private subscriptions: Subscription[] = [];
+  private activeField: 'title' | 'content' | null = null;
 
-  constructor(private diaryService: DiaryService) {
+  constructor(
+    private diaryService: DiaryService,
+    private speechService: SpeechRecognitionService
+  ) {
     this.entries = this.diaryService.getEntries();
+    this.isSpeechSupported = this.speechService.isRecognitionSupported();
+
+    // Subscribe to speech recognition updates
+    this.subscriptions.push(
+      this.speechService.transcript$.subscribe((text: string) => {
+        if (this.activeField === 'title') {
+          this.title += text;
+        } else if (this.activeField === 'content') {
+          this.content += text;
+        }
+      })
+    );
+
+    this.subscriptions.push(
+      this.speechService.isListening$.subscribe((isListening: boolean) => {
+        if (this.activeField === 'title') {
+          this.isListeningTitle = isListening;
+        } else if (this.activeField === 'content') {
+          this.isListeningContent = isListening;
+        }
+      })
+    );
+
+    this.subscriptions.push(
+      this.speechService.error$.subscribe((error: string) => {
+        console.error('Speech recognition error:', error);
+        alert('Erro no reconhecimento de voz: ' + error);
+      })
+    );
   }
 
   addEntry(): void {
@@ -31,5 +70,46 @@ export class DiaryComponent {
   deleteEntry(id: number): void {
     this.diaryService.deleteEntry(id);
     this.entries = this.diaryService.getEntries();
+  }
+
+  toggleSpeechRecognition(field: 'title' | 'content'): void {
+    if (!this.isSpeechSupported) {
+      alert('Reconhecimento de voz não é suportado neste navegador.');
+      return;
+    }
+
+    const isCurrentlyListening = field === 'title' ? this.isListeningTitle : this.isListeningContent;
+
+    if (isCurrentlyListening) {
+      // Stop listening
+      this.speechService.stop();
+      this.activeField = null;
+      if (field === 'title') {
+        this.isListeningTitle = false;
+      } else {
+        this.isListeningContent = false;
+      }
+    } else {
+      // Stop any other active listening
+      if (this.isListeningTitle || this.isListeningContent) {
+        this.speechService.stop();
+        this.isListeningTitle = false;
+        this.isListeningContent = false;
+      }
+
+      // Start listening for this field
+      this.activeField = field;
+      this.speechService.start();
+      if (field === 'title') {
+        this.isListeningTitle = true;
+      } else {
+        this.isListeningContent = true;
+      }
+    }
+  }
+
+  ngOnDestroy(): void {
+    this.speechService.stop();
+    this.subscriptions.forEach(sub => sub.unsubscribe());
   }
 }
