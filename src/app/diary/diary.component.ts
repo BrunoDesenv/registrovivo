@@ -21,22 +21,7 @@ export class DiaryComponent implements OnDestroy {
   isSpeechSupported = false;
   private subscriptions: Subscription[] = [];
   private activeField: 'title' | 'content' | null = null;
-  private interimText: string = '';
-
-  // Computed properties for display (includes interim text)
-  get displayTitle(): string {
-    if (this.activeField === 'title' && this.interimText) {
-      return this.title + this.interimText;
-    }
-    return this.title;
-  }
-
-  get displayContent(): string {
-    if (this.activeField === 'content' && this.interimText) {
-      return this.content + this.interimText;
-    }
-    return this.content;
-  }
+  private lastInterimLength: number = 0;
 
   constructor(
     private diaryService: DiaryService,
@@ -45,21 +30,47 @@ export class DiaryComponent implements OnDestroy {
     this.entries = this.diaryService.getEntries();
     this.isSpeechSupported = this.speechService.isRecognitionSupported();
 
-    // Subscribe to final speech recognition results (append to field)
+    // Subscribe to final speech recognition results
     this.subscriptions.push(
       this.speechService.finalTranscript$.subscribe((text: string) => {
         if (this.activeField === 'title') {
+          // Remove last interim text if any, then add final text
+          if (this.lastInterimLength > 0) {
+            this.title = this.title.slice(0, -this.lastInterimLength);
+          }
           this.title += text;
+          this.lastInterimLength = 0;
         } else if (this.activeField === 'content') {
+          // Remove last interim text if any, then add final text
+          if (this.lastInterimLength > 0) {
+            this.content = this.content.slice(0, -this.lastInterimLength);
+          }
           this.content += text;
+          this.lastInterimLength = 0;
         }
       })
     );
 
-    // Subscribe to interim results (show temporarily, don't append)
+    // Subscribe to interim results (replace previous interim)
     this.subscriptions.push(
       this.speechService.interimTranscript$.subscribe((text: string) => {
-        this.interimText = text;
+        if (this.activeField === 'title') {
+          // Remove previous interim text
+          if (this.lastInterimLength > 0) {
+            this.title = this.title.slice(0, -this.lastInterimLength);
+          }
+          // Add new interim text
+          this.title += text;
+          this.lastInterimLength = text.length;
+        } else if (this.activeField === 'content') {
+          // Remove previous interim text
+          if (this.lastInterimLength > 0) {
+            this.content = this.content.slice(0, -this.lastInterimLength);
+          }
+          // Add new interim text
+          this.content += text;
+          this.lastInterimLength = text.length;
+        }
       })
     );
 
@@ -107,7 +118,7 @@ export class DiaryComponent implements OnDestroy {
       // Stop listening
       this.speechService.stop();
       this.activeField = null;
-      this.interimText = '';
+      this.lastInterimLength = 0;
       if (field === 'title') {
         this.isListeningTitle = false;
       } else {
@@ -121,8 +132,8 @@ export class DiaryComponent implements OnDestroy {
         this.isListeningContent = false;
       }
 
-      // Clear interim text and start listening for this field
-      this.interimText = '';
+      // Clear interim tracking and start listening for this field
+      this.lastInterimLength = 0;
       this.activeField = field;
       this.speechService.start();
       if (field === 'title') {
@@ -131,15 +142,6 @@ export class DiaryComponent implements OnDestroy {
         this.isListeningContent = true;
       }
     }
-  }
-
-  // Handle manual input changes
-  onTitleChange(value: string): void {
-    this.title = value.replace(this.interimText, '').trimEnd();
-  }
-
-  onContentChange(value: string): void {
-    this.content = value.replace(this.interimText, '').trimEnd();
   }
 
   ngOnDestroy(): void {
