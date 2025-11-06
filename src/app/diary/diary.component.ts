@@ -21,6 +21,22 @@ export class DiaryComponent implements OnDestroy {
   isSpeechSupported = false;
   private subscriptions: Subscription[] = [];
   private activeField: 'title' | 'content' | null = null;
+  private interimText: string = '';
+
+  // Computed properties for display (includes interim text)
+  get displayTitle(): string {
+    if (this.activeField === 'title' && this.interimText) {
+      return this.title + this.interimText;
+    }
+    return this.title;
+  }
+
+  get displayContent(): string {
+    if (this.activeField === 'content' && this.interimText) {
+      return this.content + this.interimText;
+    }
+    return this.content;
+  }
 
   constructor(
     private diaryService: DiaryService,
@@ -29,14 +45,21 @@ export class DiaryComponent implements OnDestroy {
     this.entries = this.diaryService.getEntries();
     this.isSpeechSupported = this.speechService.isRecognitionSupported();
 
-    // Subscribe to speech recognition updates
+    // Subscribe to final speech recognition results (append to field)
     this.subscriptions.push(
-      this.speechService.transcript$.subscribe((text: string) => {
+      this.speechService.finalTranscript$.subscribe((text: string) => {
         if (this.activeField === 'title') {
           this.title += text;
         } else if (this.activeField === 'content') {
           this.content += text;
         }
+      })
+    );
+
+    // Subscribe to interim results (show temporarily, don't append)
+    this.subscriptions.push(
+      this.speechService.interimTranscript$.subscribe((text: string) => {
+        this.interimText = text;
       })
     );
 
@@ -84,6 +107,7 @@ export class DiaryComponent implements OnDestroy {
       // Stop listening
       this.speechService.stop();
       this.activeField = null;
+      this.interimText = '';
       if (field === 'title') {
         this.isListeningTitle = false;
       } else {
@@ -97,7 +121,8 @@ export class DiaryComponent implements OnDestroy {
         this.isListeningContent = false;
       }
 
-      // Start listening for this field
+      // Clear interim text and start listening for this field
+      this.interimText = '';
       this.activeField = field;
       this.speechService.start();
       if (field === 'title') {
@@ -106,6 +131,15 @@ export class DiaryComponent implements OnDestroy {
         this.isListeningContent = true;
       }
     }
+  }
+
+  // Handle manual input changes
+  onTitleChange(value: string): void {
+    this.title = value.replace(this.interimText, '').trimEnd();
+  }
+
+  onContentChange(value: string): void {
+    this.content = value.replace(this.interimText, '').trimEnd();
   }
 
   ngOnDestroy(): void {

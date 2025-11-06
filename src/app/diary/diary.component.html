@@ -6,7 +6,8 @@
       <div class="input-with-mic">
         <input
           type="text"
-          [(ngModel)]="title"
+          [ngModel]="displayTitle"
+          (ngModelChange)="onTitleChange($event)"
           name="title"
           placeholder="Título"
           required>
@@ -23,7 +24,8 @@
       </div>
       <div class="input-with-mic">
         <textarea
-          [(ngModel)]="content"
+          [ngModel]="displayContent"
+          (ngModelChange)="onContentChange($event)"
           name="content"
           placeholder="Conteúdo"
           required>

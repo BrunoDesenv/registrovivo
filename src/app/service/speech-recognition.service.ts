@@ -15,7 +15,8 @@ declare global {
 export class SpeechRecognitionService {
   private recognition: any;
   private isListening = false;
-  public transcript$ = new Subject<string>();
+  public finalTranscript$ = new Subject<string>();
+  public interimTranscript$ = new Subject<string>();
   public isListening$ = new Subject<boolean>();
   public error$ = new Subject<string>();
 
@@ -49,11 +50,12 @@ export class SpeechRecognitionService {
         }
       }
 
-      // Emit the transcript (prioritize final, fallback to interim)
+      // Emit final and interim results separately
       if (finalTranscript) {
-        this.transcript$.next(finalTranscript);
+        this.finalTranscript$.next(finalTranscript);
+        this.interimTranscript$.next(''); // Clear interim when we have final
       } else if (interimTranscript) {
-        this.transcript$.next(interimTranscript);
+        this.interimTranscript$.next(interimTranscript);
       }
     };
 
