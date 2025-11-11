@@ -1,0 +1,48 @@
+<div class="login-container">
+  <div class="login-card">
+    <h1>Registro Vivo</h1>
+    <h2>Login</h2>
+
+    <div class="test-credentials" *ngIf="showCredentials">
+      <p><strong>Credenciais de teste:</strong></p>
+      <p>Usuário: <code>{{ getTestCredentials().username }}</code></p>
+      <p>Senha: <code>{{ getTestCredentials().password }}</code></p>
+    </div>
+
+    <form (ngSubmit)="onSubmit()" #loginForm="ngForm">
+      <div class="form-group">
+        <label for="username">Usuário</label>
+        <input
+          type="text"
+          id="username"
+          name="username"
+          [(ngModel)]="username"
+          placeholder="Digite seu usuário"
+          required
+          autocomplete="username"
+        />
+      </div>
+
+      <div class="form-group">
+        <label for="password">Senha</label>
+        <input
+          type="password"
+          id="password"
+          name="password"
+          [(ngModel)]="password"
+          placeholder="Digite sua senha"
+          required
+          autocomplete="current-password"
+        />
+      </div>
+
+      <div class="error-message" *ngIf="errorMessage">
+        {{ errorMessage }}
+      </div>
+
+      <button type="submit" class="btn-login" [disabled]="!loginForm.form.valid">
+        Entrar
+      </button>
+    </form>
+  </div>
+</div>

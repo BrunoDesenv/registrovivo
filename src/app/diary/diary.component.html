@@ -1,5 +1,8 @@
 <div class="container">
-    <h1>Registro Vivo</h1>
+    <div class="header">
+      <h1>Registro Vivo</h1>
+      <button class="btn-logout" (click)="logout()">Sair</button>
+    </div>
 
     <!-- Formulário para adicionar nova entrada -->
     <form (ngSubmit)="addEntry()">

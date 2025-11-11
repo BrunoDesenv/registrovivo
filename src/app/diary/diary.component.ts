@@ -3,6 +3,8 @@ import { FormsModule } from '@angular/forms';
 import { DiaryEntry, DiaryService } from '../service/diary.service';
 import { CommonModule } from '@angular/common';
 import { SpeechRecognitionService } from '../service/speech-recognition.service';
+import { AuthService } from '../service/auth.service';
+import { Router } from '@angular/router';
 import { Subscription } from 'rxjs';
 
 @Component({
@@ -25,7 +27,9 @@ export class DiaryComponent implements OnDestroy {
 
   constructor(
     private diaryService: DiaryService,
-    private speechService: SpeechRecognitionService
+    private speechService: SpeechRecognitionService,
+    private authService: AuthService,
+    private router: Router
   ) {
     this.entries = this.diaryService.getEntries();
     this.isSpeechSupported = this.speechService.isRecognitionSupported();
@@ -142,6 +146,11 @@ export class DiaryComponent implements OnDestroy {
         this.isListeningContent = true;
       }
     }
+  }
+
+  logout(): void {
+    this.authService.logout();
+    this.router.navigate(['/login']);
   }
 
   ngOnDestroy(): void {
