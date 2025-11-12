@@ -1,33 +1,36 @@
 import { Injectable } from '@angular/core';
-import { BehaviorSubject, Observable } from 'rxjs';
+import { HttpClient } from '@angular/common/http';
+import { BehaviorSubject, Observable, tap, catchError, of, map } from 'rxjs';
+import { environment } from '../../environments/environment';
 
 export interface User {
   username: string;
-  password: string;
+  password?: string;
   email?: string;
   createdAt: Date;
+}
+
+interface AuthResponse {
+  success: boolean;
+  message: string;
+  user?: {
+    id: string;
+    username: string;
+    email?: string;
+    createdAt: Date;
+  };
 }
 
 @Injectable({
   providedIn: 'root'
 })
 export class AuthService {
-  // In-memory user storage
-  private users: User[] = [
-    // Default admin user for testing
-    {
-      username: 'admin',
-      password: 'admin123',
-      email: 'admin@example.com',
-      createdAt: new Date()
-    }
-  ];
-
+  private apiUrl = `${environment.apiUrl}/auth`;
   private currentUser: User | null = null;
   private isAuthenticatedSubject = new BehaviorSubject<boolean>(this.checkAuthStatus());
   public isAuthenticated$: Observable<boolean> = this.isAuthenticatedSubject.asObservable();
 
-  constructor() {}
+  constructor(private http: HttpClient) {}
 
   /**
    * Check if user is authenticated from localStorage
@@ -41,55 +44,57 @@ export class AuthService {
    * @param username - Username for the new user
    * @param password - Password for the new user
    * @param email - Optional email address
-   * @returns Object with success status and message
+   * @returns Observable with success status and message
    */
-  register(username: string, password: string, email?: string): { success: boolean; message: string } {
-    // Validate username
-    if (!username || username.trim().length < 3) {
-      return { success: false, message: 'Usuário deve ter pelo menos 3 caracteres' };
-    }
-
-    // Validate password
-    if (!password || password.length < 6) {
-      return { success: false, message: 'Senha deve ter pelo menos 6 caracteres' };
-    }
-
-    // Check if username already exists
-    if (this.users.some(user => user.username === username)) {
-      return { success: false, message: 'Usuário já existe' };
-    }
-
-    // Create new user
-    const newUser: User = {
-      username: username.trim(),
-      password: password,
-      email: email?.trim(),
-      createdAt: new Date()
-    };
-
-    this.users.push(newUser);
-    return { success: true, message: 'Usuário cadastrado com sucesso!' };
+  register(username: string, password: string, email?: string): Observable<{ success: boolean; message: string }> {
+    return this.http.post<AuthResponse>(`${this.apiUrl}/register`, {
+      username,
+      password,
+      email
+    }).pipe(
+      map(response => ({
+        success: response.success,
+        message: response.message
+      })),
+      catchError(error => {
+        console.error('Registration error:', error);
+        return of({
+          success: false,
+          message: error.error?.message || 'Erro ao cadastrar usuário'
+        });
+      })
+    );
   }
 
   /**
    * Login with username and password
    * @param username - Username to validate
    * @param password - Password to validate
-   * @returns true if credentials match, false otherwise
+   * @returns Observable<boolean> - true if credentials match, false otherwise
    */
-  login(username: string, password: string): boolean {
-    const user = this.users.find(
-      u => u.username === username && u.password === password
+  login(username: string, password: string): Observable<boolean> {
+    return this.http.post<AuthResponse>(`${this.apiUrl}/login`, {
+      username,
+      password
+    }).pipe(
+      tap(response => {
+        if (response.success && response.user) {
+          this.currentUser = {
+            username: response.user.username,
+            email: response.user.email,
+            createdAt: new Date(response.user.createdAt)
+          };
+          localStorage.setItem('isLoggedIn', 'true');
+          localStorage.setItem('currentUser', username);
+          this.isAuthenticatedSubject.next(true);
+        }
+      }),
+      map(response => response.success),
+      catchError(error => {
+        console.error('Login error:', error);
+        return of(false);
+      })
     );
-
-    if (user) {
-      this.currentUser = user;
-      localStorage.setItem('isLoggedIn', 'true');
-      localStorage.setItem('currentUser', username);
-      this.isAuthenticatedSubject.next(true);
-      return true;
-    }
-    return false;
   }
 
   /**
@@ -117,6 +122,13 @@ export class AuthService {
   }
 
   /**
+   * Get current username from localStorage
+   */
+  getCurrentUsername(): string | null {
+    return localStorage.getItem('currentUser');
+  }
+
+  /**
    * Get test credentials for display (optional - for display purposes)
    */
   getTestCredentials(): { username: string; password: string } {
@@ -124,12 +136,5 @@ export class AuthService {
       username: 'admin',
       password: 'admin123'
     };
-  }
-
-  /**
-   * Get all registered users (for debugging - remove in production)
-   */
-  getAllUsers(): User[] {
-    return this.users;
   }
 }

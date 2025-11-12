@@ -31,7 +31,8 @@ export class DiaryComponent implements OnDestroy {
     private authService: AuthService,
     private router: Router
   ) {
-    this.entries = this.diaryService.getEntries();
+    // Load entries from the database
+    this.loadEntries();
     this.isSpeechSupported = this.speechService.isRecognitionSupported();
 
     // Subscribe to final speech recognition results
@@ -96,18 +97,52 @@ export class DiaryComponent implements OnDestroy {
     );
   }
 
+  loadEntries(): void {
+    this.diaryService.getEntries().subscribe({
+      next: (entries) => {
+        this.entries = entries;
+      },
+      error: (error) => {
+        console.error('Error loading entries:', error);
+        alert('Erro ao carregar entradas do diário');
+      }
+    });
+  }
+
   addEntry(): void {
     if (this.title.trim() && this.content.trim()) {
-      this.diaryService.addEntry({ title: this.title, content: this.content });
-      this.title = '';
-      this.content = '';
-      this.entries = this.diaryService.getEntries();
+      this.diaryService.addEntry({ title: this.title, content: this.content }).subscribe({
+        next: (entry) => {
+          if (entry) {
+            this.title = '';
+            this.content = '';
+            this.loadEntries(); // Reload entries after adding
+          }
+        },
+        error: (error) => {
+          console.error('Error adding entry:', error);
+          alert('Erro ao adicionar entrada');
+        }
+      });
     }
   }
 
-  deleteEntry(id: number): void {
-    this.diaryService.deleteEntry(id);
-    this.entries = this.diaryService.getEntries();
+  deleteEntry(id: string): void {
+    if (confirm('Tem certeza que deseja excluir esta entrada?')) {
+      this.diaryService.deleteEntry(id).subscribe({
+        next: (success) => {
+          if (success) {
+            this.loadEntries(); // Reload entries after deleting
+          } else {
+            alert('Erro ao excluir entrada');
+          }
+        },
+        error: (error) => {
+          console.error('Error deleting entry:', error);
+          alert('Erro ao excluir entrada');
+        }
+      });
+    }
   }
 
   toggleSpeechRecognition(field: 'title' | 'content'): void {
