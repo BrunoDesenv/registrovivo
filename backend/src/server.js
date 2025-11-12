@@ -1,7 +1,15 @@
-require('dotenv').config();
+const path = require('path');
+require('dotenv').config({ path: path.resolve(__dirname, '../.env') });
 const express = require('express');
 const cors = require('cors');
 const connectDB = require('./config/database');
+
+// Verify environment variables are loaded
+if (!process.env.MONGODB_URI) {
+  console.error('❌ ERROR: MONGODB_URI is not defined in .env file');
+  console.error('📁 Looking for .env at:', path.resolve(__dirname, '../.env'));
+  process.exit(1);
+}
 
 // Import routes
 const authRoutes = require('./routes/auth');
