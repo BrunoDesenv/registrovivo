@@ -1,0 +1,77 @@
+<div class="register-container">
+  <div class="register-card">
+    <h1>Registro Vivo</h1>
+    <h2>Criar Conta</h2>
+
+    <form (ngSubmit)="onSubmit()" #registerForm="ngForm">
+      <div class="form-group">
+        <label for="username">Usuário *</label>
+        <input
+          type="text"
+          id="username"
+          name="username"
+          [(ngModel)]="username"
+          placeholder="Digite seu usuário (mínimo 3 caracteres)"
+          required
+          minlength="3"
+          autocomplete="username"
+        />
+      </div>
+
+      <div class="form-group">
+        <label for="email">Email (opcional)</label>
+        <input
+          type="email"
+          id="email"
+          name="email"
+          [(ngModel)]="email"
+          placeholder="Digite seu email"
+          autocomplete="email"
+        />
+      </div>
+
+      <div class="form-group">
+        <label for="password">Senha *</label>
+        <input
+          type="password"
+          id="password"
+          name="password"
+          [(ngModel)]="password"
+          placeholder="Digite sua senha (mínimo 6 caracteres)"
+          required
+          minlength="6"
+          autocomplete="new-password"
+        />
+      </div>
+
+      <div class="form-group">
+        <label for="confirmPassword">Confirmar Senha *</label>
+        <input
+          type="password"
+          id="confirmPassword"
+          name="confirmPassword"
+          [(ngModel)]="confirmPassword"
+          placeholder="Confirme sua senha"
+          required
+          autocomplete="new-password"
+        />
+      </div>
+
+      <div class="success-message" *ngIf="successMessage">
+        {{ successMessage }}
+      </div>
+
+      <div class="error-message" *ngIf="errorMessage">
+        {{ errorMessage }}
+      </div>
+
+      <button type="submit" class="btn-register" [disabled]="!registerForm.form.valid">
+        Cadastrar
+      </button>
+
+      <div class="login-link">
+        Já tem uma conta? <a routerLink="/login">Fazer login</a>
+      </div>
+    </form>
+  </div>
+</div>
