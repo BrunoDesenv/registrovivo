@@ -30,14 +30,21 @@ export class LoginComponent {
       return;
     }
 
-    const success = this.authService.login(this.username, this.password);
-
-    if (success) {
-      this.router.navigate(['/diary']);
-    } else {
-      this.errorMessage = 'Credenciais inválidas';
-      this.password = '';
-    }
+    this.authService.login(this.username, this.password).subscribe({
+      next: (success) => {
+        if (success) {
+          this.router.navigate(['/diary']);
+        } else {
+          this.errorMessage = 'Credenciais inválidas';
+          this.password = '';
+        }
+      },
+      error: (error) => {
+        console.error('Login error:', error);
+        this.errorMessage = 'Erro ao fazer login. Tente novamente.';
+        this.password = '';
+      }
+    });
   }
 
   getTestCredentials() {

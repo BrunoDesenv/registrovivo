@@ -41,22 +41,28 @@ export class RegisterComponent {
     }
 
     // Attempt to register
-    const result = this.authService.register(this.username, this.password, this.email);
+    this.authService.register(this.username, this.password, this.email).subscribe({
+      next: (result) => {
+        if (result.success) {
+          this.successMessage = result.message;
+          // Clear form
+          this.username = '';
+          this.password = '';
+          this.confirmPassword = '';
+          this.email = '';
 
-    if (result.success) {
-      this.successMessage = result.message;
-      // Clear form
-      this.username = '';
-      this.password = '';
-      this.confirmPassword = '';
-      this.email = '';
-
-      // Redirect to login after 2 seconds
-      setTimeout(() => {
-        this.router.navigate(['/login']);
-      }, 2000);
-    } else {
-      this.errorMessage = result.message;
-    }
+          // Redirect to login after 2 seconds
+          setTimeout(() => {
+            this.router.navigate(['/login']);
+          }, 2000);
+        } else {
+          this.errorMessage = result.message;
+        }
+      },
+      error: (error) => {
+        console.error('Registration error:', error);
+        this.errorMessage = 'Erro ao cadastrar usuário. Tente novamente.';
+      }
+    });
   }
 }

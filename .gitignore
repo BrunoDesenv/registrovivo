@@ -11,6 +11,12 @@
 npm-debug.log
 yarn-error.log
 
+# Environment variables
+.env
+
+# Netlify
+.netlify/
+
 # IDEs and editors
 .idea/
 .project
