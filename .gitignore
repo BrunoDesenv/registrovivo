@@ -8,13 +8,14 @@
 
 # Node
 /node_modules
-backend/node_modules
 npm-debug.log
 yarn-error.log
 
 # Environment variables
 .env
-backend/.env
+
+# Netlify
+.netlify/
 
 # IDEs and editors
 .idea/
